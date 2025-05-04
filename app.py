@@ -5,6 +5,23 @@ from pytrends.exceptions import TooManyRequestsError
 from data_utils import load_prepared_data
 from model import forecast_with_gru, export_forecast_to_csv
 import urllib.parse
+import matplotlib.pyplot as plt
+import random
+import time
+
+
+FUN_FACTS = [
+    "👠 Y2K fashion trends are making a major comeback!",
+    "🧠 GRU stands for Gated Recurrent Unit – a smart version of RNNs!",
+    "👗 'Old Money' aesthetic is trending on TikTok and Instagram.",
+    "📈 The GRU model learns from past data to predict the future.",
+    "💄 'Clean Girl' makeup look is one of the most searched beauty trends.",
+    "🌍 Google Trends reflects real-time user interests across the globe.",
+    "📉 MSE punishes large errors more than MAE does.",
+    "👡 Chunky sandals and ballet flats returned on Paris runways.",
+    "🎯 R² helps you know how well the model explains the trend!"
+]
+
 # --- Static options ---
 CATEGORIES = {
     "Fashion": ["Y2K", "Old Money", "Couture", "Minimalist", "Streetwear"],
@@ -142,8 +159,61 @@ if df is not None and not df.empty:
         st.line_chart(df.set_index("date")[["value"]])
 
         if st.button("Run Forecast Model"):
+
             with st.spinner("Training model and generating forecast..."):
-                forecast = forecast_with_gru(df, "value", days_ahead=forecast_days)
-                chart_df = forecast.pivot(index="date", columns="type", values="value")
-                st.line_chart(chart_df)
-                export_forecast_to_csv(forecast)
+                # Create a single placeholder for fun facts
+                fact_placeholder = st.empty()
+                for fact in FUN_FACTS:
+                    fact_placeholder.info(f"💡 Fun Fact: {fact}")
+                    time.sleep(2.5)
+                forecast, metrics, loss_values = forecast_with_gru(df, "value", days_ahead=forecast_days)
+
+            # Display the forecast chart
+            st.subheader("📈 Historical Data + Forecast")
+            chart_df = forecast.pivot(index="date", columns="type", values="value")
+            st.line_chart(chart_df)
+
+            # 📈 Display metrics
+            st.subheader("📏 Model Performance Metrics")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("🧪 Train MSE", f"{metrics['Train MSE']:.4f}")
+                st.metric("📏 Train MAE", f"{metrics['Train MAE']:.4f}")
+                st.metric("🎯 Train R²", f"{metrics['Train R²']:.4f}")
+            with col2:
+                st.metric("🧪 Val MSE", f"{metrics['Validation MSE']:.4f}")
+                st.metric("📏 Val MAE", f"{metrics['Validation MAE']:.4f}")
+                st.metric("🎯 Val R²", f"{metrics['Validation R²']:.4f}")
+            with st.expander("ℹ️ What do these metrics mean?"):
+                st.markdown("""
+                **🔹 Mean Squared Error (MSE)**  
+                Measures how far off predictions are, with larger errors weighted more.
+
+                **🔹 Mean Absolute Error (MAE)**  
+                The average error, easier to interpret since it's in the same scale as the data.
+
+                **🔹 R² Score (Coefficient of Determination)**  
+                Tells how much of the variation in the trend is explained by the model.  
+                - **1.00** means perfect prediction  
+                - **0.00** means model is no better than guessing the average  
+                - Negative means it performs worse than a flat average prediction
+
+                **Training vs Validation**  
+                - **Training**: performance on data the model learned from.  
+                - **Validation**: performance on unseen data (simulates the future).
+                """)
+
+
+            # 📉 Plot the training loss
+            st.subheader("📉 Training Loss Curve")
+            fig, ax = plt.subplots()
+            ax.plot(loss_values)
+            ax.set_xlabel("Epoch")
+            ax.set_ylabel("Loss")
+            ax.set_title("GRU Training Loss Over Epochs")
+            st.pyplot(fig)
+
+            # 📥 Export CSV
+            export_forecast_to_csv(forecast)
+
