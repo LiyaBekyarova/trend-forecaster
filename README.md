@@ -53,7 +53,7 @@ trend-forecaster/
 ### 1. Install & Run
 
 ```bash
-git clone https://github.com/yourusername/trend-forecaster.git
+git clone https://github.com/LiyaBekyarova/trend-forecaster.git
 cd trend-forecaster
 python3 -m venv venv
 source venv/bin/activate
