@@ -8,6 +8,7 @@ It’s built for:
 * Marketing teams and e-commerce brands
 * Curious users exploring trend dynamics
 
+You can find Trend Forecaster live at: https://trend-forecaster-lb.streamlit.app
 ---
 
 ## 🧠 Key Features
