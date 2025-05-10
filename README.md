@@ -1,33 +1,35 @@
 # 🔮 Trend Forecaster
 
-The **Trend Forecaster** is a Streamlit-based web app that uses historical interest data from **Google Trends** to **predict  trends** using a GRU-based neural network.
+**Trend Forecaster** is an interactive Streamlit web app that predicts future search trends using data from **Google Trends** and a deep learning model based on **GRU (Gated Recurrent Unit)** networks.
 
-It is designed for:
-- Fashion tech researchers and analysts
-- Brands tracking search interest
-- Trend enthusiasts and data lovers
+It’s built for:
+
+* Fashion tech analysts and researchers
+* Marketing teams and e-commerce brands
+* Curious users exploring trend dynamics
 
 ---
 
 ## 🧠 Key Features
 
-- 📡 **Live Google Trends integration** (with fallback support)
-- 📁 **Use prepared datasets** or **upload your own CSVs**
-- 📊 **Visualize search interest** with clean line charts
-- 🤖 **Forecast next 1, 3, or 6 months** using a trained GRU model
-- 💾 **Export results as CSV** for further analysis
+* 📡 **Live Google Trends integration** via PyTrends API
+* 📁 **Use prepared datasets** or upload your own Google Trends CSVs
+* 🧮 **Forecast future interest** for the next 1, 3, or 6 months
+* 🧠 Powered by a **2-layer GRU neural network**
+* 📊 **Line charts** of historical + forecasted trends
+* 💾 Export results as **CSV**
 
 ---
 
 ## 🏗️ Tech Stack
 
-| Component     | Tech Used             |
-|---------------|------------------------|
-| Frontend      | Streamlit              |
-| Backend       | Python, Pandas         |
-| Forecasting   | TensorFlow (GRU)       |
-| Data source   | PyTrends (Google API)  |
-| Visualization | Altair, Matplotlib     |
+| Component     | Technology                  |
+| ------------- | --------------------------- |
+| Frontend      | Streamlit                   |
+| Backend       | Python, Pandas              |
+| ML Model      | TensorFlow (2× GRU + Dense) |
+| Data Source   | PyTrends / Google Trends    |
+| Visualization | Streamlit, Matplotlib       |
 
 ---
 
@@ -36,19 +38,19 @@ It is designed for:
 ```
 trend-forecaster/
 │
-├── app.py              # Streamlit app UI and logic
-├── data_utils.py       # Data loading and preprocessing functions
-├── model.py            # GRU model definition and forecasting logic
-├── requirements.txt    # Full list of Python dependencies
+├── app.py              # Main Streamlit app logic
+├── model.py            # GRU forecasting model logic
+├── data_utils.py       # CSV parsing, normalization, loaders
+├── requirements.txt    # All project dependencies
 └── data/
-    └── prepared/       # CSVs for preloaded keywords
+    └── prepared/       # Preloaded keyword CSVs
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone and Install
+### 1. Install & Run
 
 ```bash
 git clone https://github.com/yourusername/trend-forecaster.git
@@ -56,11 +58,6 @@ cd trend-forecaster
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 2. Run the App
-
-```bash
 streamlit run app.py
 ```
 
@@ -68,35 +65,37 @@ streamlit run app.py
 
 ## 💡 How It Works
 
-1. **Choose an input mode**:
-   - Type your own keyword (e.g. `"Al dente"`, `"Y2K"`).
-   - Select a keyword from categories (like `"Beauty"` → `"Glowy skin"`).
+1. **Choose how to input data**:
+
+   * Manually type a keyword (real-time fetch from Google Trends)
+   * Choose a keyword from the predefined categories
+   * Upload a CSV exported from [trends.google.com](https://trends.google.com)
 
 2. **Select a time range**:
-   - Last 90 days (short-term)
-   - Last 12 months
-   - Last 5 years (long-term)
 
-3. **Forecasting Logic**:
-   - If you provide **< 6 months** of data → forecasts **1 month** ahead
-   - If you provide **~6–24 months** → forecasts **3 months**
-   - If you provide **> 2 years** → forecasts **6 months**
+   * Last 90 days → forecasts 1 month (daily granularity)
+   * Last 12 months → forecasts 3 months (weekly)
+   * Last 5 years → forecasts 6 months (weekly)
 
-4. **Visualizations**:
-   - Original time series data
-   - Forecasted vs. historical interest
-   - Exportable CSV download
+3. **The model processes the data**:
+
+   * Normalizes and windows the series
+   * Trains a GRU model with `window_size` based on time range
+   * Forecasts future values step-by-step (autoregressively)
+
+4. **View & export results**:
+
+   * Actual vs predicted validation chart
+   * Forecast line chart (future values)
+   * CSV download
 
 ---
 
-## 📄 Accepted Data Formats
+## 📄 Accepted CSV Formats
 
-The app can parse CSVs from:
-- Google Trends (exported manually)
-- Your custom files
-- Prepared datasets in `/data/prepared/`
+Supported formats include manually exported Google Trends files and localized labels.
 
-### ✅ Format Example (Google Trends):
+### Example A (English):
 
 ```
 Week,Fashion (Worldwide)
@@ -104,52 +103,74 @@ Week,Fashion (Worldwide)
 2023-01-08,60
 ```
 
-### ✅ Format Example (Custom):
+### Example B (Bulgarian):
 
 ```
-Ден,Cowboy boots: (В цял свят)
-2025-02-01,78
+Седмица,Sunglasses: (В цял свят)
+2025-01-01,91
 ```
 
-The app will auto-detect columns like `"Week"`, `"Date"`, `"Ден"` or `"Седмица"`.
+App auto-detects:
+
+* Date columns like `Date`, `Week`, `Седмица`, `Ден`
+* Value columns (trend values)
 
 ---
 
-## 📉 Model: GRU (Gated Recurrent Unit)
+## 🤖 GRU Forecasting Model
 
-- Input: Time series (30-day windows)
-- Output: Forecasted values
-- Framework: Keras (TensorFlow backend)
-- Trained directly on normalized historical data
-- Forecast horizon adjusts to input range:
-  - 90+ days: 1 month
-  - 180+ days: 3 months
-  - 2+ years: 6 months
+* Architecture: `GRU(50, return_sequences=True)` → `GRU(50)` → `Dense(1)`
+* Input: Sliding windows of past values (e.g. 14/24/52 time steps)
+* Output: One-step prediction (autoregressively repeated N times)
+* Optimizer: Adam
+* Loss: Mean Squared Error (MSE)
+* Validation: 30% of dataset
+* Scaling: MinMaxScaler
+
+Forecast horizon depends on detected time range:
+
+* **< 180 days** → 30-day forecast
+* **180–730 days** → 3-month forecast
+* **> 2 years** → 6-month forecast
 
 ---
 
-## 🧪 Error Handling & Fallbacks
+## 🛡 Fallbacks & Errors
 
-- If **Google Trends fails** (rate limit or offline), users are prompted to:
-  1. Download the data manually from [trends.google.com](https://trends.google.com)
-  2. Upload the `.csv` file into the app
+* If PyTrends fails or rate limits:
 
-- Invalid CSVs are validated and rejected with clear errors.
+  * App prompts you to download `.csv` from [trends.google.com](https://trends.google.com)
+  * File upload UI is shown
+
+* Invalid CSV formats:
+
+  * App will show a clear error (e.g. missing date column)
+
+---
+
+## 🧪 Validation Metrics
+
+* Mean Squared Error (MSE)
+* Mean Absolute Error (MAE)
+* R² (explained variance)
+
+All metrics are shown for validation data (30% holdout).
 
 ---
 
 ## 📦 Dependencies
 
-See [`requirements.txt`](./requirements.txt) for full list, including:
+Main packages:
 
-- `streamlit`
-- `pandas`
-- `tensorflow`
-- `pytrends`
-- `matplotlib`
-- `altair`
+* `streamlit`
+* `tensorflow==2.19.0`
+* `pandas`
+* `scikit-learn`
+* `pytrends`
+* `matplotlib`
+* `altair`
 
-Install with:
+Install all via:
 
 ```bash
 pip install -r requirements.txt
@@ -157,48 +178,50 @@ pip install -r requirements.txt
 
 ---
 
-## 🧠 Tips for Better Forecasts
+## 🧠 Forecasting Tips
 
-- Use **at least 6 months of data** for stable long-term predictions.
-- Avoid overly niche keywords — no data → no forecast!
-- Daily data (from Google Trends) works best when exporting with region: Worldwide.
-
----
-
-## ✨ Example Use Cases
-
-- Predict how long **“Clean girl”** will stay trendy
-- Compare trend strength between **“Y2K”** and **“Couture”**
-- Help brands plan collections or marketing campaigns
-- Explore macro trend cycles in fashion
+* Use longer time ranges (6+ months) for more stable results
+* Forecasts may flatten if keyword is inactive or noisy
+* Avoid rare terms that don’t appear in Google Trends
+* Daily granularity works best with recent short-term data
 
 ---
 
-## 📥 Contributions
+## ✨ Use Case Examples
 
-Have ideas to improve this forecaster?
-- Support multiple keywords?
-- Compare categories?
-- Add LSTM or Transformer options?
+* Forecast future popularity of "Sunglasses" in summer
+* See when "Clean girl" trend might fade
+* Help fashion brands align product drops with demand
+* Explore trend evolution (Y2K, Coquette, Old Money, etc.)
 
-Open an issue or submit a pull request!
+---
+
+## 📥 Contribute
+
+Want to improve this tool?
+
+* Add LSTM or Transformer models
+* Visualize multiple keyword comparisons
+* Build a deployment pipeline (Docker, HuggingFace Spaces)
+
+Pull requests welcome!
 
 ---
 
 ## 🛠 Troubleshooting
 
-| Problem                         | Solution                                                   |
-|----------------------------------|-------------------------------------------------------------|
-| `KeyError: 'date'`              | Ensure your CSV has a proper date column (Week, Date, etc.)|
-| No data from Google Trends      | Wait a few minutes or download CSV manually                |
-| `TooManyRequestsError`          | You’ve hit the rate limit — try again later                |
-| Forecast is flat or unrealistic | Use longer historical periods if available                 |
+| Issue                  | Solution                             |
+| ---------------------- | ------------------------------------ |
+| No data or empty chart | Try a broader keyword or timeframe   |
+| `KeyError: 'date'`     | Make sure your CSV has a date column |
+| `TooManyRequestsError` | Wait or switch to CSV upload         |
+| Forecast looks flat    | Try longer time range or weekly data |
 
 ---
 
-## 🔗 Links
+## 🔗 Resources
 
-- [Google Trends](https://trends.google.com/trends/)
-- [Streamlit Docs](https://docs.streamlit.io/)
-- [Keras GRU Layer](https://keras.io/api/layers/recurrent_layers/gru/)
-- [PyTrends Library](https://github.com/GeneralMills/pytrends)
+* [Google Trends](https://trends.google.com/trends/)
+* [Keras GRU Docs](https://keras.io/api/layers/recurrent_layers/gru/)
+* [Streamlit](https://streamlit.io/)
+* [PyTrends](https://github.com/GeneralMills/pytrends)
